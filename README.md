@@ -15,13 +15,14 @@ Requirements: Docker Desktop (with Docker Compose).
    cp .env.example .env
    ```
 
-   The `.env` file must contain these four variables:
+   The `.env` file contains these variables (`HIS_HOSPITAL_A_URL` is optional):
 
    ```env
    POSTGRES_USER=agnos
    POSTGRES_PASSWORD=<your database password>
    POSTGRES_DB=agnos
    JWT_SECRET=<random string, at least 32 characters>
+   HIS_HOSPITAL_A_URL=
    ```
 
    | Variable | Description |
