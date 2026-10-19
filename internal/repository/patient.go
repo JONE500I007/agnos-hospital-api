@@ -106,3 +106,25 @@ func (r *PatientRepository) FindByID(ctx context.Context, hospitalID int, id str
 	}
 	return &p, nil
 }
+
+func (r *PatientRepository) HospitalName(ctx context.Context, hospitalID int) (string, error) {
+	var name string
+	err := r.db.QueryRow(ctx, "SELECT name FROM hospitals WHERE id = $1", hospitalID).Scan(&name)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", model.ErrHospitalNotFound
+	}
+	return name, err
+}
+
+func (r *PatientRepository) Save(ctx context.Context, hospitalID int, p model.Patient) error {
+	_, err := r.db.Exec(ctx,
+		`INSERT INTO patients (hospital_id, first_name_th, middle_name_th, last_name_th,
+			first_name_en, middle_name_en, last_name_en, date_of_birth, patient_hn,
+			national_id, passport_id, phone_number, email, gender)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, '')::date, $9,
+			NULLIF($10, ''), NULLIF($11, ''), $12, $13, NULLIF($14, ''))`,
+		hospitalID, p.FirstNameTH, p.MiddleNameTH, p.LastNameTH,
+		p.FirstNameEN, p.MiddleNameEN, p.LastNameEN, p.DateOfBirth, p.PatientHN,
+		p.NationalID, p.PassportID, p.PhoneNumber, p.Email, p.Gender)
+	return err
+}

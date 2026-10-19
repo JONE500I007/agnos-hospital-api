@@ -33,7 +33,7 @@ func (s *StaffService) Create(ctx context.Context, username, password, hospital 
 	return s.store.Create(ctx, username, string(hash), hospital)
 }
 
-func (s *StaffService) Login(ctx context.Context, username, password string) (string, error) {
+func (s *StaffService) Login(ctx context.Context, username, password, hospital string) (string, error) {
 	staff, err := s.store.GetByUsername(ctx, username)
 	if errors.Is(err, model.ErrStaffNotFound) {
 		return "", model.ErrInvalidCredentials
@@ -43,6 +43,10 @@ func (s *StaffService) Login(ctx context.Context, username, password string) (st
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(staff.PasswordHash), []byte(password)); err != nil {
+		return "", model.ErrInvalidCredentials
+	}
+
+	if staff.HospitalName != hospital {
 		return "", model.ErrInvalidCredentials
 	}
 

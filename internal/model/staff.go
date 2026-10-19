@@ -5,4 +5,5 @@ type Staff struct {
 	Username     string
 	PasswordHash string
 	HospitalID   int
+	HospitalName string
 }

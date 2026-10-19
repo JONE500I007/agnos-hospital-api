@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -98,6 +99,7 @@ func TestPatientGetByID(t *testing.T) {
 		{"found", &fakePatientService{patient: &model.Patient{NationalID: "1100100000011"}}, http.StatusOK},
 		{"not found", &fakePatientService{err: model.ErrPatientNotFound}, http.StatusNotFound},
 		{"internal error", &fakePatientService{err: errors.New("db down")}, http.StatusInternalServerError},
+		{"HIS unavailable", &fakePatientService{err: fmt.Errorf("%w: timeout", model.ErrHISUnavailable)}, http.StatusBadGateway},
 	}
 
 	for _, tt := range tests {

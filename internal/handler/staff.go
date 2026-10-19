@@ -11,7 +11,7 @@ import (
 
 type StaffService interface {
 	Create(ctx context.Context, username, password, hospital string) error
-	Login(ctx context.Context, username, password string) (string, error)
+	Login(ctx context.Context, username, password, hospital string) (string, error)
 }
 
 type StaffHandler struct {
@@ -31,6 +31,7 @@ type createStaffRequest struct {
 type loginRequest struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
+	Hospital string `json:"hospital" binding:"required"`
 }
 
 func (h *StaffHandler) Create(c *gin.Context) {
@@ -60,7 +61,7 @@ func (h *StaffHandler) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := h.svc.Login(c.Request.Context(), req.Username, req.Password)
+	token, err := h.svc.Login(c.Request.Context(), req.Username, req.Password, req.Hospital)
 	switch {
 	case errors.Is(err, model.ErrInvalidCredentials):
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})

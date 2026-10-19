@@ -4,17 +4,17 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/JONE500I007/agnos-hospital-api/internal/config"
-	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgxpool"
-
-
 	"github.com/JONE500I007/agnos-hospital-api/internal/handler"
+	"github.com/JONE500I007/agnos-hospital-api/internal/his"
+	"github.com/JONE500I007/agnos-hospital-api/internal/middleware"
 	"github.com/JONE500I007/agnos-hospital-api/internal/repository"
 	"github.com/JONE500I007/agnos-hospital-api/internal/service"
 
-	"github.com/JONE500I007/agnos-hospital-api/internal/middleware"
+	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
@@ -34,23 +34,32 @@ func main() {
 		log.Fatalf("cannot connect to db: %v", err)
 	}
 
+	var hospitalAHIS service.HISClient
+	if cfg.HISHospitalAURL != "" {
+		hospitalAHIS = his.NewHTTPClient(cfg.HISHospitalAURL, 5*time.Second)
+		log.Printf("Hospital A HIS: %s", cfg.HISHospitalAURL)
+	} else {
+		hospitalAHIS = his.NewMockClient(his.SampleHospitalAPatients()...)
+		log.Print("HIS_HOSPITAL_A_URL not set: using the built-in mock HIS for Hospital A")
+	}
+
 	r := gin.Default()
 
 	staffRepo := repository.NewStaffRepository(pool)
 	staffSvc := service.NewStaffService(staffRepo, cfg.JWTSecret)
 	staffHandler := handler.NewStaffHandler(staffSvc)
 
-
-	r.POST("/staff/login", staffHandler.Login)
 	r.POST("/staff/create", staffHandler.Create)
+	r.POST("/staff/login", staffHandler.Login)
 
 	patientRepo := repository.NewPatientRepository(pool)
-	patientSvc := service.NewPatientService(patientRepo)
+	patientSvc := service.NewPatientService(patientRepo, map[string]service.HISClient{
+		"Hospital A": hospitalAHIS,
+	})
 	patientHandler := handler.NewPatientHandler(patientSvc)
 
 	patients := r.Group("/patient", middleware.Auth(cfg.JWTSecret))
 	patients.POST("/search", patientHandler.Search)
-
 	patients.GET("/search/:id", patientHandler.GetByID)
 
 	r.GET("/health", func(c *gin.Context) {

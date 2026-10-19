@@ -22,7 +22,7 @@ func (f *fakeStaffService) Create(ctx context.Context, username, password, hospi
 	return f.createErr
 }
 
-func (f *fakeStaffService) Login(ctx context.Context, username, password string) (string, error) {
+func (f *fakeStaffService) Login(ctx context.Context, username, password, hospital string) (string, error) {
 	return f.token, f.loginErr
 }
 
@@ -74,7 +74,7 @@ func TestStaffCreate(t *testing.T) {
 }
 
 func TestStaffLogin(t *testing.T) {
-	const valid = `{"username":"nurse1","password":"pass1234"}`
+	const valid = `{"username":"nurse1","password":"pass1234","hospital":"Hospital A"}`
 
 	tests := []struct {
 		name     string
@@ -86,8 +86,10 @@ func TestStaffLogin(t *testing.T) {
 	}{
 		{"success", valid, "tok123", nil, http.StatusOK, `"token":"tok123"`},
 		{"wrong credentials", valid, "", model.ErrInvalidCredentials, http.StatusUnauthorized, ""},
-		{"missing username", `{"password":"pass1234"}`, "", nil, http.StatusBadRequest, ""},
-		{"missing password", `{"username":"nurse1"}`, "", nil, http.StatusBadRequest, ""},
+		{"wrong hospital", `{"username":"nurse1","password":"pass1234","hospital":"Hospital B"}`, "", model.ErrInvalidCredentials, http.StatusUnauthorized, ""},
+		{"missing username", `{"password":"pass1234","hospital":"Hospital A"}`, "", nil, http.StatusBadRequest, ""},
+		{"missing password", `{"username":"nurse1","hospital":"Hospital A"}`, "", nil, http.StatusBadRequest, ""},
+		{"missing hospital", `{"username":"nurse1","password":"pass1234"}`, "", nil, http.StatusBadRequest, ""},
 		{"invalid json", `{`, "", nil, http.StatusBadRequest, ""},
 		{"internal error", valid, "", errors.New("db down"), http.StatusInternalServerError, ""},
 	}

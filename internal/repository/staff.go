@@ -39,8 +39,10 @@ func (r *StaffRepository) Create(ctx context.Context, username, passwordHash, ho
 func (r *StaffRepository) GetByUsername(ctx context.Context, username string) (*model.Staff, error) {
 	var s model.Staff
 	err := r.db.QueryRow(ctx,
-		`SELECT id, username, password_hash, hospital_id FROM staff WHERE username = $1`,
-		username).Scan(&s.ID, &s.Username, &s.PasswordHash, &s.HospitalID)
+		`SELECT s.id, s.username, s.password_hash, s.hospital_id, h.name
+		 FROM staff s JOIN hospitals h ON h.id = s.hospital_id
+		 WHERE s.username = $1`,
+		username).Scan(&s.ID, &s.Username, &s.PasswordHash, &s.HospitalID, &s.HospitalName)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, model.ErrStaffNotFound
 	}

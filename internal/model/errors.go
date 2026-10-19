@@ -8,5 +8,6 @@ var (
 	ErrStaffNotFound    = errors.New("staff not found")
 
 	ErrInvalidCredentials = errors.New("invalid username or password")
-	ErrPatientNotFound = errors.New("patient not found")
+	ErrPatientNotFound    = errors.New("patient not found")
+	ErrHISUnavailable     = errors.New("hospital information system unavailable")
 )

@@ -66,12 +66,12 @@ func TestStaffServiceLogin(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	staff := &model.Staff{ID: 1, Username: "nurse1", PasswordHash: string(hash), HospitalID: 3}
+	staff := &model.Staff{ID: 1, Username: "nurse1", PasswordHash: string(hash), HospitalID: 3, HospitalName: "Hospital A"}
 
 	t.Run("success returns a token carrying the hospital", func(t *testing.T) {
 		svc := NewStaffService(&fakeStaffStore{staff: staff}, testSecret)
 
-		token, err := svc.Login(context.Background(), "nurse1", "pass1234")
+		token, err := svc.Login(context.Background(), "nurse1", "pass1234", "Hospital A")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -93,7 +93,18 @@ func TestStaffServiceLogin(t *testing.T) {
 
 	t.Run("wrong password", func(t *testing.T) {
 		svc := NewStaffService(&fakeStaffStore{staff: staff}, testSecret)
-		token, err := svc.Login(context.Background(), "nurse1", "wrongpass")
+		token, err := svc.Login(context.Background(), "nurse1", "wrongpass", "Hospital A")
+		if !errors.Is(err, model.ErrInvalidCredentials) {
+			t.Errorf("error = %v, want ErrInvalidCredentials", err)
+		}
+		if token != "" {
+			t.Error("token must be empty on failure")
+		}
+	})
+
+	t.Run("correct password but wrong hospital", func(t *testing.T) {
+		svc := NewStaffService(&fakeStaffStore{staff: staff}, testSecret)
+		token, err := svc.Login(context.Background(), "nurse1", "pass1234", "Hospital B")
 		if !errors.Is(err, model.ErrInvalidCredentials) {
 			t.Errorf("error = %v, want ErrInvalidCredentials", err)
 		}
@@ -104,7 +115,7 @@ func TestStaffServiceLogin(t *testing.T) {
 
 	t.Run("unknown user gives the same error as wrong password", func(t *testing.T) {
 		svc := NewStaffService(&fakeStaffStore{getErr: model.ErrStaffNotFound}, testSecret)
-		_, err := svc.Login(context.Background(), "ghost", "pass1234")
+		_, err := svc.Login(context.Background(), "ghost", "pass1234", "Hospital A")
 		if !errors.Is(err, model.ErrInvalidCredentials) {
 			t.Errorf("error = %v, want ErrInvalidCredentials", err)
 		}
@@ -113,7 +124,7 @@ func TestStaffServiceLogin(t *testing.T) {
 	t.Run("store failure is not reported as bad credentials", func(t *testing.T) {
 		dbErr := errors.New("db down")
 		svc := NewStaffService(&fakeStaffStore{getErr: dbErr}, testSecret)
-		_, err := svc.Login(context.Background(), "nurse1", "pass1234")
+		_, err := svc.Login(context.Background(), "nurse1", "pass1234", "Hospital A")
 		if !errors.Is(err, dbErr) {
 			t.Errorf("error = %v, want %v", err, dbErr)
 		}

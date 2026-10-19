@@ -52,6 +52,8 @@ func (h *PatientHandler) GetByID(c *gin.Context) {
 	switch {
 	case errors.Is(err, model.ErrPatientNotFound):
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+	case errors.Is(err, model.ErrHISUnavailable):
+		c.JSON(http.StatusBadGateway, gin.H{"error": model.ErrHISUnavailable.Error()})
 	case err != nil:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
 	default:
